@@ -65,9 +65,9 @@ Submission repo for -> UdacityFSND: Linux Server Configuration project
                 just set them to be non-accessable files
 
                 this should do: `chmod 600 pk.pem `
-3. install packages
+3. install packages needed
 
-    `sudo apt install zsh nano apache2 apache2-utils libapache2-mod-wsgi-py3 python3 python3-pip`
+    `sudo apt install nano git zsh apache2 apache2-utils libapache2-mod-wsgi-py3 python3 python3-pip`
 4. Secure instance:
     - Upgrade server
         * upgrade distro
@@ -122,20 +122,127 @@ Submission repo for -> UdacityFSND: Linux Server Configuration project
       sudo nano .ssh/authorized_keys
       ```
       copy/paste public key you generated inside it
+    - login with grader using the private key you generated for it
+5. deployment
+    - get iCatalog from git repo
+    
+        `git clone https://github.com/AbdelazizSharaf001/iCatalog.git`
+    - install dpendances via `pip`, `pip3` , `pipenv`.. etc.
+    - database
+        
+        engine: SQLALCHEMY [flask extention]
+        
+        project uses `sqlite3` so only sqlalchemy is enough here to be installed cia `pip`
+        
+        > recommended database type `postgresql` is not used for this project but it's configured for future migration
+        > 
+        > steps by code
+        >   ```
+        >   # set postgresql version to install
+        >   # here we go with latest (v12 for now)
+        >   wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+        >   echo "deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" |sudo tee /etc/apt/sources.list.d/pgdg.list
+        >   
+        >   # update to feche version installation
+		>	sudo apt update
+        >   
+        >   # install postgresql v12
+        >   sudo apt install postgresql-12 postgresql-client-12
+        >   
+        >   # restart service to ensure it's added and running
+		>   sudo service postgresql restart
+        >   
+        >   # connect to psql server
+        >   sudo -u postgres psql
+        >   
+        >   # create new user
+        >   postgres=# CREATE USER catalog password 'STRONG_PASSWORD';
+        >   
+        >   # create database and give ownership to new created user
+        >   postgres=# CREATE DATABASE iCatalog OWNER catalog;
+        >   ```
+        > after this process your database URI for engine should be like this
+        >
+        >   `postgresql://catalog:YOUR_PASSWORD@localhost/icatalog`
+        >
+        > for now we will use sqlite as mentioned
+    - server configration
+        * apache and it's related packages is instailled in step 2
+        * `sudo nano /etc/apache2/sites-enabled/000-default.conf`
+            ```
+            <VirtualHost *:80>
+                # The ServerName directive sets the request scheme, hostname and port that
+                # the server uses to identify itself. This is used when creating
+                # redirection URLs. In the context of virtual hosts, the ServerName
+                # specifies what hostname must appear in the request's Host: header to
+                # match this virtual host. For the default virtual host (this file) this
+                # value is not decisive as it is used as a last resort host regardless.
+                # However, you must set it for any further virtual host explicitly.
+                #ServerName www.example.com
+
+                ServerAdmin webmaster@localhost
+                DocumentRoot /var/www/html/iCatalog
+
+                # Available loglevels: trace8, ..., trace1, debug, info, notice, warn,
+                # error, crit, alert, emerg.
+                # It is also possible to configure the loglevel for particular
+                # modules, e.g.
+                #LogLevel info ssl:warn
+
+                ErrorLog ${APACHE_LOG_DIR}/error.log
+                CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+                # For most configuration files from conf-available/, which are
+                # enabled or disabled at a global level, it is possible to
+                # include a line for only one particular virtual host. For example the
+                # following line enables the CGI configuration for this host only
+                # after it has been globally disabled with "a2disconf".
+                #Include conf-available/serve-cgi-bin.conf
+
+                WSGIScriptAlias / /var/www/html/iCatalog/wsgi.py
+                WSGIDaemonProcess yourapplication user=grader group=grader threads=5
+
+                <Directory /var/www/yourapplication>
+                    WSGIProcessGroup yourapplication
+                    WSGIApplicationGroup %{GLOBAL}
+                    Order deny,allow
+                    Allow from all
+                    Require all granted
+                </Directory>
+            </VirtualHost>
+            ```
+        * for linux problems with file permmisions, modify apache user
+            
+            `sudo nano /etc/apache2/apache2.conf`
+            ```
+            User grader
+            ```
+            These could be also set in `/etc/apache2/envvars`
+        * `sudo service apache2 restart`
+6. if all things have gone right
+    
+    go to your server PUBLIC_IP,
+    
+    congratulations for myself as well as you,
+    here is our site
 
 
+# third-party resources
+> going along with the guide above shold make you reach what you nead but databases always have complains
+>
+> sqlite choosen is the least one to complain with SQLALCHEMY but let read some docs and projects examples for enhancment
 
-Prepare to deploy your project.
-9. Configure the local timezone to UTC.
-10. Install and configure Apache to serve a Python mod_wsgi application.
+1. [sqlalchemy docs](https://docs.sqlalchemy.org/en/13/)
+2. [flask-sqlalchemy docs](https://flask-sqlalchemy.palletsprojects.com/en/2.x/)
+3. [realpython >> Flask by Example – Setting up Postgres, SQLAlchemy, and Alembic](https://realpython.com/flask-by-example-part-2-postgres-sqlalchemy-and-alembic/)
+    > you need to go with the new versions and to install flask extentions
+4. [hackernoon >> flask from scrach](https://hackernoon.com/flask-web-programming-from-scratch-9ada8088fde1)
 
-If you built your project with Python 3, you will need to install the Python 3 mod_wsgi package on your server: sudo apt-get install libapache2-mod-wsgi-py3.
-11. Install and configure PostgreSQL:
 
-Do not allow remote connections
-Create a new database user named catalog that has limited permissions to your catalog application database.
-12. Install git.
+# Reviewer data
 
-Deploy the Item Catalog project.
-13. Clone and setup your Item Catalog project from the Github repository you created earlier in this Nanodegree program.
-14. Set it up in your server so that it functions correctly when visiting your server’s IP address in a browser. Make sure that your .git directory is not publicly accessible via a browser!
+ip:         18.191.236.251
+
+port:       2200
+
+ssh_key:    { provided in "Notes to Reviewer" }
